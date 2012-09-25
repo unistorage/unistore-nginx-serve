@@ -1,4 +1,5 @@
-# Note: nginx must be built with `--with-http_image_filter_module` option.
+# Note: nginx must be built with `--with-http_image_filter_module`
+# and `--add-module=/path/to/mod_zip-1.x` options.
 
 http {
   # ...
