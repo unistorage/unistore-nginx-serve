@@ -98,5 +98,9 @@ rotated_png_serve_url = get_serve_url(rotated_png_uri)
 # Проверяем, что он будет обработан unistore-nginx-serve
 assert 'uns' in rotated_png_serve_url
 
+r = requests.get(rotated_png_serve_url)
+assert r.status_code == 200
+assert 'image/png' in r.headers['content-type']
+
 
 print 'OK!'
