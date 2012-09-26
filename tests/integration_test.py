@@ -21,7 +21,7 @@ def upload_file(path):
             files={'file': open(path, 'rb')},
             headers=headers)
     assert r.status_code == 200
-    return r.json['id']
+    return r.json['id'], r.json['resource_uri']
 
 
 def get_serve_url(_id):
@@ -36,8 +36,8 @@ def get_serve_url(_id):
 
 
 # Загружаем png
-png_id = upload_file('fixtures/png.png')
-png_serve_url = get_serve_url(png_id)
+png_id, png_uri = upload_file('fixtures/png.png')
+png_serve_url = get_serve_url(png_uri)
 assert requests.get(png_serve_url).status_code == 200
 
 # Заказываем ресайз
@@ -45,9 +45,10 @@ resize_png_url = urljoin(unistore_url, png_id) + '?action=resize&w=100&h=100&mod
 r = requests.get(resize_png_url, headers=headers)
 assert r.status_code == 200
 resized_png_id = r.json['id']
+resized_png_uri = r.json['resource_uri']
 
 # Тут же просим serve url
-resized_png_serve_url = get_serve_url(resized_png_id)
+resized_png_serve_url = get_serve_url(resized_png_uri)
 
 # Проверяем, что он будет обработан unistore-nginx-serve
 assert 'uns' in resized_png_serve_url
@@ -58,7 +59,7 @@ assert 'image/png' in r.headers['content-type']
 # Даём операции время выполниться
 sleep(1)
 # Просим serve url заново
-resized_png_serve_url = get_serve_url(resized_png_id)
+resized_png_serve_url = get_serve_url(resized_png_uri)
 # Проверяем, что он будет обработан gridfs-serve
 assert 'uns' not in resized_png_serve_url
 r = requests.get(resized_png_serve_url)
@@ -67,16 +68,16 @@ assert 'image/png' in r.headers['content-type']
 
 
 # Загружаем jpg
-jpg_id = upload_file('fixtures/cat.jpg')
+jpg_id, jpg_uri = upload_file('fixtures/cat.jpg')
 
 # Создаём zip
 r = requests.post(urljoin(unistore_url, 'zip'), data={
         'file_id': [png_id, jpg_id],
         'filename': 'images.zip'
     }, headers=headers)
-zip_id = r.json['id']
+zip_uri = r.json['resource_uri']
 
-zip_serve_url = get_serve_url(zip_id)
+zip_serve_url = get_serve_url(zip_uri)
 # Проверяем, что он будет обработан unistore-nginx-serve 
 assert 'uns' in zip_serve_url
 
