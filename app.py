@@ -36,7 +36,8 @@ def teardown_request(exception):
 
 def try_serve_zip_collection(_id):
     """Возвращает ответ для mod_zip (заголовок X-Archive-Files и список файлов в формате,
-    указанном mod_zip) либо None в случае, если ZipCollection с заданным `_id` не существует."""
+    указанном mod_zip) либо None в случае, если ZipCollection с заданным `_id` не существует.
+    """
     zip_collection_data = g.db.zip_collections.find_one(_id)
     if not zip_collection_data:
         return None
@@ -66,7 +67,8 @@ def try_serve_zip_collection(_id):
 def try_serve_resized_image(_id):
     """Если файл с заданным `_id` -- картинка, для которой заказана операция resize с параметром
     mode равным keep или crop, возвращает X-Accel-Redirect на internal location в nginx, где
-    картинка ресайзится на лету с помощью http_image_filter_module."""
+    картинка ресайзится на лету с помощью http_image_filter_module.
+    """
     file_data = g.db.fs.files.find_one(_id)
     if not file_data or not file_data['pending']:
         return None
@@ -74,30 +76,35 @@ def try_serve_resized_image(_id):
     original_content_type = file_data['original_content_type']
     actions = file_data['actions']
 
-    if not original_content_type.startswith('image'):
-        return None
-
-    if len(actions) > 1:
+    supported_types = ('image/gif', 'image/png', 'image/jpeg')
+    if not original_content_type in supported_types or len(actions) > 1:
         return None
 
     action_name, action_args = actions[0]
-    mode, w, h = action_args
+    if action_name == 'resize':
+        mode, w, h = action_args
+        if mode not in ('keep', 'crop'):
+            return None
+        if mode == 'keep':
+            mode = 'resize'
 
-    if action_name != 'resize':
+        nginx_filter_args = {
+            'id': file_data['original'],
+            'mode': mode,
+            'w': w or '-',
+            'h': h or '-',
+        }
+        internal_location = settings.IMAGE_FILTER_MODULE_RESIZE_LOCATION.format(**nginx_filter_args)
+    elif action_name == 'rotate':
+        angle = action_args[0]
+        nginx_filter_args = {
+            'id': file_data['original'],
+            'angle': angle
+        }
+        internal_location = settings.IMAGE_FILTER_MODULE_ROTATE_LOCATION.format(**nginx_filter_args)
+    else:
         return None
-    if mode not in ('keep', 'crop'):
-        return None
 
-    if mode == 'keep':
-        mode = 'resize'
-
-    nginx_filter_args = {
-        'id': file_data['original'],
-        'mode': mode,
-        'w': w or '-',
-        'h': h or '-',
-    }
-    internal_location = settings.IMAGE_FILTER_MODULE_LOCATION.format(**nginx_filter_args)
     headers = {'X-Accel-Redirect': internal_location}
     return Response(headers=headers)
 

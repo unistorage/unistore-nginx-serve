@@ -28,7 +28,6 @@ def get_serve_url(_id):
     storage_url = urljoin(unistore_url, _id)
     r = requests.get(storage_url, headers=headers)
     assert r.status_code == 200
-
     if 'information' in r.json: # Regular file
         return r.json['information']['uri']
     elif 'uri' in r.json: # Pending file
@@ -40,12 +39,14 @@ png_id, png_uri = upload_file('fixtures/png.png')
 png_serve_url = get_serve_url(png_uri)
 assert requests.get(png_serve_url).status_code == 200
 
+
 # Заказываем ресайз
-resize_png_url = urljoin(unistore_url, png_id) + '?action=resize&w=100&h=100&mode=keep' 
+resize_png_url = urljoin(unistore_url, png_uri) + '?action=resize&w=100&h=100&mode=keep' 
 r = requests.get(resize_png_url, headers=headers)
 assert r.status_code == 200
 resized_png_id = r.json['id']
 resized_png_uri = r.json['resource_uri']
+
 
 # Тут же просим serve url
 resized_png_serve_url = get_serve_url(resized_png_uri)
@@ -55,6 +56,7 @@ assert 'uns' in resized_png_serve_url
 r = requests.get(resized_png_serve_url)
 assert r.status_code == 200
 assert 'image/png' in r.headers['content-type']
+
 
 # Даём операции время выполниться
 sleep(1)
@@ -84,5 +86,17 @@ assert 'uns' in zip_serve_url
 r = requests.get(zip_serve_url, headers=headers)
 assert r.status_code == 200
 assert 'application/zip' in r.headers['content-type']
+
+
+# Заказываем поворот
+rotate_png_url = urljoin(unistore_url, png_id) + '?action=rotate&angle=90' 
+r = requests.get(rotate_png_url, headers=headers)
+assert r.status_code == 200
+rotated_png_uri = r.json['resource_uri']
+# Тут же просим serve url
+rotated_png_serve_url = get_serve_url(rotated_png_uri)
+# Проверяем, что он будет обработан unistore-nginx-serve
+assert 'uns' in rotated_png_serve_url
+
 
 print 'OK!'
