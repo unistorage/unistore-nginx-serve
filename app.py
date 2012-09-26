@@ -104,7 +104,7 @@ def try_serve_resized_image(_id):
 
 @app.route('/uns/<string:_id>/')
 def get_file_info(_id=None):
-    # TODO Указывать префикс /uns/ не здесь, а в nginx.conf?
+    # TODO Как сделать так, чтобы указывать префикс /uns только в nginx.conf?
     _id = ObjectId(_id)
     response = try_serve_zip_collection(_id) or \
                try_serve_resized_image(_id)
