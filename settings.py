@@ -8,11 +8,12 @@ MONGO_HOST = 'localhost'
 MONGO_PORT = 27017
 MONGO_DB_NAME = 'grid_fs'
 
-MONGO_DB_REPL_ON = True
-MONGO_DB_REPL_URI = 'localhost:27017,localhost:27018'
-MONGO_REPLICA_NAME = 'grid_fs_set'
+MONGO_REPLICATION_ON = True
+MONGO_REPLICA_SET_URI = 'localhost:27017,localhost:27018'
+MONGO_REPLICA_SET_NAME = 'grid_fs_set'
 
-IMAGE_FILTER_MODULE_LOCATION = '/{mode}/{w}x{h}/{id}'
+IMAGE_FILTER_MODULE_RESIZE_LOCATION = '/{mode}/{w}x{h}/{id}'
+IMAGE_FILTER_MODULE_ROTATE_LOCATION = '/rotate/{angle}/{id}'
 
 try:
     from settings_local import *
