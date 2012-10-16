@@ -14,9 +14,9 @@ if settings.DEBUG:
 
 
 def get_mongodb_connection():
-    if settings.MONGO_DB_REPL_ON:
-        return ReplicaSetConnection(settings.MONGO_DB_REPL_URI,
-                    replicaset=settings.MONGO_REPLICA_NAME)
+    if settings.MONGO_REPLICATION_ON:
+        return ReplicaSetConnection(settings.MONGO_REPLICA_SET_URI,
+                    replicaset=settings.MONGO_REPLICA_SET_NAME)
     else:
         return Connection(settings.MONGO_HOST, settings.MONGO_PORT)
 
