@@ -16,7 +16,7 @@ if settings.DEBUG:
 def get_mongodb_connection():
     if settings.MONGO_REPLICATION_ON:
         return ReplicaSetConnection(settings.MONGO_REPLICA_SET_URI,
-                    replicaset=settings.MONGO_REPLICA_SET_NAME)
+                                    replicaset=settings.MONGO_REPLICA_SET_NAME)
     else:
         return Connection(settings.MONGO_HOST, settings.MONGO_PORT)
 
@@ -113,8 +113,7 @@ def try_serve_resized_image(_id):
 def get_file_info(_id=None):
     # TODO Как сделать так, чтобы указывать префикс /uns только в nginx.conf?
     _id = ObjectId(_id)
-    response = try_serve_zip_collection(_id) or \
-               try_serve_resized_image(_id)
+    response = try_serve_zip_collection(_id) or try_serve_resized_image(_id)
 
     if not response:
         abort(404)
