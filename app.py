@@ -4,7 +4,7 @@ from datetime import datetime
 import gridfs
 from bson.objectid import ObjectId
 from pymongo import Connection, ReplicaSetConnection
-from flask import Flask, Response, g, abort
+from flask import Flask, Response, g, abort, redirect
 
 import settings
 
@@ -76,8 +76,7 @@ def try_serve_resized_image(_id):
         return None
     if not file_data['pending']:
         if datetime.utcnow() - file_data['uploadDate'] <= settings.AVERAGE_TASK_TIME:
-            headers = {'X-Accel-Redirect': '/%s' % _id}
-            return Response(headers=headers)
+            return redirect('/%s' % _id)
         else:
             return None
 
@@ -117,7 +116,7 @@ def try_serve_resized_image(_id):
     return Response(headers=headers)
 
 
-@app.route('/uns/<string:_id>/')
+@app.route('/uns/<string:_id>')
 def get_file_info(_id=None):
     # TODO Как сделать так, чтобы указывать префикс /uns только в nginx.conf?
     _id = ObjectId(_id)
