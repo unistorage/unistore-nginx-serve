@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+from datetime import datetime
+
 import gridfs
 from bson.objectid import ObjectId
 from pymongo import Connection, ReplicaSetConnection
@@ -70,7 +72,10 @@ def try_serve_resized_image(_id):
     картинка ресайзится на лету с помощью http_image_filter_module.
     """
     file_data = g.db.fs.files.find_one(_id)
-    if not file_data or not file_data['pending']:
+    if not file_data:
+        return None
+    if not file_data['pending'] and \
+            (datetime.utcnow() - file_data['uploadDate'] > settings.AVERAGE_TASK_TIME):
         return None
 
     original_content_type = file_data['original_content_type']
