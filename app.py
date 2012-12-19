@@ -74,9 +74,12 @@ def try_serve_resized_image(_id):
     file_data = g.db.fs.files.find_one(_id)
     if not file_data:
         return None
-    if not file_data['pending'] and \
-            (datetime.utcnow() - file_data['uploadDate'] > settings.AVERAGE_TASK_TIME):
-        return None
+    if not file_data['pending']:
+        if datetime.utcnow() - file_data['uploadDate'] <= settings.AVERAGE_TASK_TIME:
+            headers = {'X-Accel-Redirect': '/%s' % _id}
+            return Response(headers=headers)
+        else:
+            return None
 
     original_content_type = file_data['original_content_type']
     actions = file_data['actions']
