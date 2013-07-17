@@ -1,4 +1,4 @@
-Flask
-pymongo
+Flask==0.9
+pymongo==2.4.2
 
 requests # for test
