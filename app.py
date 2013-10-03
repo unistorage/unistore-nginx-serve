@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+# coding: utf-8
 from datetime import datetime
 
 import gridfs
@@ -66,6 +66,23 @@ def try_serve_zip_collection(_id):
     return Response(response_data, headers=headers)
 
 
+def get_internal_location_part(action_name, action_args):
+    internal_location_part = None
+
+    if action_name == 'resize':
+        mode, w, h = action_args
+        if mode not in ('keep', 'crop'):
+            return None
+        if mode == 'keep':
+            mode = 'resize'
+        internal_location_part = '{mode}_{w}x{h}'.format(mode=mode, w=w, h=h)
+    elif action_name == 'rotate':
+        angle = action_args[0]
+        internal_location_part = 'rotate_{angle}'.format(angle=angle)
+
+    return internal_location_part
+
+
 def try_serve_resized_image(_id):
     """Если файл с заданным `_id` -- картинка, для которой заказана операция resize с параметром
     mode равным keep или crop, возвращает X-Accel-Redirect на internal location в nginx, где
@@ -79,46 +96,27 @@ def try_serve_resized_image(_id):
             return redirect('/%s' % _id)
         else:
             return None
-
+    
     original_content_type = file_data['original_content_type']
     actions = file_data['actions']
-
     supported_types = ('image/gif', 'image/png', 'image/jpeg')
-    if not original_content_type in supported_types or len(actions) > 1:
+    if not original_content_type in supported_types:
         return None
 
-    action_name, action_args = actions[0]
-    if action_name == 'resize':
-        mode, w, h = action_args
-        if mode not in ('keep', 'crop'):
+    internal_location_parts = ['/{0}'.format(settings.INTERNAL_LOCATION)]
+    for action_name, action_args in actions:
+        part = get_internal_location_part(action_name, action_args)
+        if not part:
             return None
-        if mode == 'keep':
-            mode = 'resize'
+        internal_location_parts.append(part)
+    internal_location_parts.append(str(file_data['original']))
 
-        nginx_filter_args = {
-            'id': file_data['original'],
-            'mode': mode,
-            'w': w or '-',
-            'h': h or '-',
-        }
-        internal_location = settings.IMAGE_FILTER_MODULE_RESIZE_LOCATION.format(**nginx_filter_args)
-    elif action_name == 'rotate':
-        angle = action_args[0]
-        nginx_filter_args = {
-            'id': file_data['original'],
-            'angle': angle
-        }
-        internal_location = settings.IMAGE_FILTER_MODULE_ROTATE_LOCATION.format(**nginx_filter_args)
-    else:
-        return None
-
-    headers = {'X-Accel-Redirect': internal_location}
+    headers = {'X-Accel-Redirect': '/'.join(internal_location_parts)}
     return Response(headers=headers)
 
 
-@app.route('/uns/<string:_id>')
+@app.route('/<string:_id>')
 def get_file_info(_id=None):
-    # TODO Как сделать так, чтобы указывать префикс /uns только в nginx.conf?
     _id = ObjectId(_id)
     response = try_serve_zip_collection(_id) or try_serve_resized_image(_id)
 
