@@ -43,16 +43,16 @@ def try_serve_zip_collection(_id):
     zip_collection_data = g.db.zip_collections.find_one(_id)
     if not zip_collection_data:
         return None
-    
+
     headers = {
         'X-Archive-Files': 'zip',
         'Content-Disposition': 'attachment; filename=%s' % zip_collection_data['filename']
     }
-    
+
     rows = []
     for file_id in zip_collection_data['file_ids']:
         file_data = g.db.fs.files.find_one(file_id)
-        
+
         crc32 = '%08x' % file_data['crc32']
         length = file_data['length']
         path = '/%s' % file_data['_id']
@@ -96,7 +96,7 @@ def try_serve_resized_image(_id):
             return redirect('/%s' % _id)
         else:
             return None
-    
+
     original_content_type = file_data['original_content_type']
     actions = file_data['actions']
     supported_types = ('image/gif', 'image/png', 'image/jpeg')
@@ -109,6 +109,10 @@ def try_serve_resized_image(_id):
         if not part:
             return None
         internal_location_parts.append(part)
+
+    if file_data.get('aws_bucket_name'):
+        internal_location_parts.append('s3/{}/'.format(file_data['aws_bucket_name']))
+
     internal_location_parts.append(str(file_data['original']))
 
     headers = {'X-Accel-Redirect': '/'.join(internal_location_parts)}
