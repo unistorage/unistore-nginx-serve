@@ -18,34 +18,30 @@ headers = {'Token': token}
 
 def upload_file(path):
     r = requests.post(unistore_url,
-            files={'file': open(path, 'rb')},
-            headers=headers)
+                      files={'file': open(path, 'rb')},
+                      headers=headers)
     assert r.status_code == 200
-    return r.json['id'], r.json['resource_uri']
+    return r.json()['resource_uri']
 
 
 def get_serve_url(_id):
     storage_url = urljoin(unistore_url, _id)
     r = requests.get(storage_url, headers=headers)
     assert r.status_code == 200
-    if 'information' in r.json: # Regular file
-        return r.json['information']['uri']
-    elif 'uri' in r.json: # Pending file
-        return r.json['uri']
+    return r.json()['data']['url']
 
 
 # Загружаем png
-png_id, png_uri = upload_file('fixtures/png.png')
+png_uri = upload_file('fixtures/png.png')
 png_serve_url = get_serve_url(png_uri)
 assert requests.get(png_serve_url).status_code == 200
 
 
 # Заказываем ресайз
-resize_png_url = urljoin(unistore_url, png_uri) + '?action=resize&w=100&h=100&mode=keep' 
+resize_png_url = urljoin(unistore_url, png_uri) + '?action=resize&w=100&h=100&mode=keep'
 r = requests.get(resize_png_url, headers=headers)
 assert r.status_code == 200
-resized_png_id = r.json['id']
-resized_png_uri = r.json['resource_uri']
+resized_png_uri = r.json()['resource_uri']
 
 
 # Тут же просим serve url
@@ -54,6 +50,11 @@ resized_png_serve_url = get_serve_url(resized_png_uri)
 # Проверяем, что он будет обработан unistore-nginx-serve
 assert 'uns' in resized_png_serve_url
 r = requests.get(resized_png_serve_url)
+assert r.status_code == 200
+assert 'image/png' in r.headers['content-type']
+
+# Добавляем любую строку в конце и проверяем, что все ок
+r = requests.get(resized_png_serve_url + "asdfasdf")
 assert r.status_code == 200
 assert 'image/png' in r.headers['content-type']
 
@@ -68,19 +69,24 @@ r = requests.get(resized_png_serve_url)
 assert r.status_code == 200
 assert 'image/png' in r.headers['content-type']
 
+# Добавляем любую строку в конце и проверяем, что все ок
+r = requests.get(resized_png_serve_url + "asdfasdf")
+assert r.status_code == 200
+assert 'image/png' in r.headers['content-type']
+
 
 # Загружаем jpg
-jpg_id, jpg_uri = upload_file('fixtures/cat.jpg')
+jpg_uri = upload_file('fixtures/cat.jpg')
 
 # Создаём zip
-r = requests.post(urljoin(unistore_url, 'zip'), data={
-        'file_id': [png_id, jpg_id],
-        'filename': 'images.zip'
+r = requests.post(urljoin(unistore_url, 'zip/'), data={
+    'file[]': [png_uri, jpg_uri],
+    'filename': 'images.zip'
     }, headers=headers)
-zip_uri = r.json['resource_uri']
+zip_uri = r.json()['resource_uri']
 
 zip_serve_url = get_serve_url(zip_uri)
-# Проверяем, что он будет обработан unistore-nginx-serve 
+# Проверяем, что он будет обработан unistore-nginx-serve
 assert 'uns' in zip_serve_url
 
 r = requests.get(zip_serve_url, headers=headers)
@@ -89,10 +95,10 @@ assert 'application/zip' in r.headers['content-type']
 
 
 # Заказываем поворот
-rotate_png_url = urljoin(unistore_url, png_id) + '?action=rotate&angle=90' 
+rotate_png_url = urljoin(unistore_url, png_uri) + '?action=rotate&angle=90'
 r = requests.get(rotate_png_url, headers=headers)
 assert r.status_code == 200
-rotated_png_uri = r.json['resource_uri']
+rotated_png_uri = r.json()['resource_uri']
 # Тут же просим serve url
 rotated_png_serve_url = get_serve_url(rotated_png_uri)
 # Проверяем, что он будет обработан unistore-nginx-serve
