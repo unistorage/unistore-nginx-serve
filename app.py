@@ -111,7 +111,7 @@ def try_serve_resized_image(_id):
         internal_location_parts.append(part)
 
     if file_data.get('aws_bucket_name'):
-        internal_location_parts.append('s3/{}/'.format(file_data['aws_bucket_name']))
+        internal_location_parts.append('s3/{}'.format(file_data['aws_bucket_name']))
 
     internal_location_parts.append(str(file_data['original']))
 
