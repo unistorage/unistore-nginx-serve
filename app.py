@@ -100,11 +100,13 @@ def try_serve_resized_image(_id):
     original_content_type = file_data['original_content_type']
     actions = file_data['actions']
     supported_types = ('image/gif', 'image/png', 'image/jpeg')
-    if not original_content_type in supported_types:
+    if original_content_type not in supported_types:
         return None
 
     internal_location_parts = ['/{0}'.format(settings.INTERNAL_LOCATION)]
     for action_name, action_args in actions:
+        if action_name == 'optimize':
+            continue
         part = get_internal_location_part(action_name, action_args)
         if not part:
             return None
